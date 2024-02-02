@@ -1,4 +1,7 @@
-import type { LinksFunction } from "@remix-run/node";
+import type {
+  LinksFunction,
+  LoaderFunctionArgs,
+} from "@remix-run/node";
 
 import appStylesHref from "./app.css";
 
@@ -28,13 +31,17 @@ export const action = async () => {
   return redirect(`/contacts/${contact.id}/edit`)
 }
 
-export const loader = async () => {
-  const contacts = await getContacts();
-  return json({ contacts });
+export const loader = async ({
+  request,
+}: LoaderFunctionArgs) => {
+  const url = new URL(request.url);
+  const q = url.searchParams.get("q");
+  const contacts = await getContacts(q);
+  return json({ contacts, q });
 };
 
 export default function App() {
-  const { contacts } = useLoaderData<typeof loader>();
+  const { contacts, q } = useLoaderData<typeof loader>();
   const navigation = useNavigation();
   return (
     <html lang="en">
@@ -50,11 +57,12 @@ export default function App() {
           <div>
             <Form id="search-form" role="search">
               <input
-                id="q"
                 aria-label="Search contacts"
-                placeholder="Search"
-                type="search"
+                defaultValue={q || ""}
+                id="q"
                 name="q"
+                type="search"
+                placeholder="Search"
               />
               <div id="search-spinner" aria-hidden hidden={true} />
             </Form>
